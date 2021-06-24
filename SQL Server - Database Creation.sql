@@ -61,8 +61,8 @@ TotalFamiliesWChildren SMALLINT,
 TotalFamiliesWOChildren SMALLINT,
 TotalHomeOwners SMALLINT,
 TotalRenters SMALLINT,
-NewWard TINYINT NOT NULL FOREIGN KEY REFERENCES Ward(WardID),
-OldWard TINYINT NOT NULL FOREIGN KEY REFERENCES Ward(WardID)
+Ward_2021 TINYINT NOT NULL FOREIGN KEY REFERENCES Ward(WardID),
+Ward_2017 TINYINT NOT NULL FOREIGN KEY REFERENCES Ward(WardID)
 );
 
 CREATE TABLE Candidate
@@ -76,13 +76,14 @@ OfficeTypeID TINYINT NOT NULL FOREIGN KEY REFERENCES Office_Type(OfficeTypeID)
 
 CREATE TABLE Voting_Station
 (
-VotingStationID SMALLINT NOT NULL PRIMARY KEY,
+VotingStationID SMALLINT NOT NULL IDENTITY(1,1) PRIMARY KEY,
+VotingStationNumber SMALLINT,
 VotingStationName VARCHAR(70),
-TotalEnumeratedElectors SMALLINT,
+EnumeratedElectors SMALLINT,
 PercentVoterTurnout DECIMAL(3,2),
 VotingStationTypeID TINYINT NOT NULL FOREIGN KEY REFERENCES Voting_Station_Type(VotingStationTypeID),
-NewWard TINYINT NOT NULL FOREIGN KEY REFERENCES Ward(WardID),
-OldWard TINYINT NOT NULL FOREIGN KEY REFERENCES Ward(WardID)
+Ward_2021 TINYINT NOT NULL FOREIGN KEY REFERENCES Ward(WardID),
+Ward_2017 TINYINT NOT NULL FOREIGN KEY REFERENCES Ward(WardID)
 );
 
 CREATE TABLE Community_Candidate_Station
@@ -97,8 +98,50 @@ Votes SMALLINT
 -- populate database tables from master table --
 
 INSERT INTO Ward(WardID)
-SELECT DISTINCT NewWard
+SELECT DISTINCT Ward_2021
 FROM MasterTable;
+
+INSERT INTO Candidate_Status(CandidateStatusID, CandidateStatus)
+SELECT DISTINCT CandidateStatusID, CandidateStatus
+FROM MasterTable;
+
+INSERT INTO Electoral_Status(ElectoralStatusID, ElectoralStatus)
+SELECT DISTINCT ElectoralStatusID, ElectoralStatus
+FROM MasterTable;
+
+INSERT INTO Office_Type(OfficeTypeID, OfficeType)
+SELECT DISTINCT OfficeTypeID, OfficeType
+FROM MasterTable;
+
+INSERT INTO Voting_Station_Type(VotingStationTypeID, VotingStationType)
+SELECT DISTINCT VotingStationTypeID,VotingStationType
+FROM MasterTable;
+
+INSERT INTO Community_Demographics(CommunityID, CommunityName, CommunityPopulation, TotalMale, TotalFemale,
+TotalAge20_29, TotalAge30_39, TotalAge40_49, TotalAge50_59, TotalAge60_69, TotalAge70_79, TotalAgeMoreThan80,
+TotalIncomeLessThan59K, TotalIncome60K_99999, TotalIncome100K_149999, TotalIncome150K_199999, TotalIncomeMoreThan200K,
+TotalCitizens, TotalNonCitizens, TotalFamiliesWChildren, TotalFamiliesWOChildren, TotalHomeOwners, TotalRenters, Ward_2021, Ward_2017)
+SELECT DISTINCT CommunityID, CommunityName, CommunityPopulation, TotalMale, TotalFemale,
+TotalAge20_29, TotalAge30_39, TotalAge40_49, TotalAge50_59, TotalAge60_69, TotalAge70_79, TotalAgeMoreThan80,
+TotalIncomeLessThan59K, TotalIncome60K_99999, TotalIncome100K_149999, TotalIncome150K_199999, TotalIncomeMoreThan200K,
+TotalCitizens, TotalNonCitizens, TotalFamiliesWChildren, TotalFamiliesWOChildren, TotalHomeOwners, TotalRenters, Ward_2021, Ward_2017
+FROM MasterTable;
+
+INSERT INTO Candidate(CandidateID, CandidateName, CandidateStatusID, ElectoralStatusID, OfficeTypeID)
+SELECT DISTINCT CandidateID, CandidateName, CandidateStatusID, ElectoralStatusID, OfficeTypeID
+FROM MasterTable;
+
+INSERT INTO Voting_Station(VotingStationNumber, VotingStationName, EnumeratedElectors, PercentVoterTurnout, VotingStationTypeID, Ward_2021, Ward_2017)
+SELECT DISTINCT VotingStationNumber, VotingStationName, TotalEnumeratedElectors, PercentVoterTurnout, VotingStationTypeID, Ward_2021, Ward_2017
+FROM MasterTable;
+
+-- populate bridge table --
+
+INSERT INTO Community_Candidate_Station(CommunityID, CandidateID, VotingStationID, Votes)
+SELECT MT.CommunityID, MT.CandidateID, VS.VotingStationID, MT.Votes
+FROM MasterTable as MT
+JOIN Voting_Station as VS
+ON MT.VotingStationName = VS.VotingStationName;
 
 -- display contents of database tables --
 
